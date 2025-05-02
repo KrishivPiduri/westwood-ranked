@@ -2,13 +2,13 @@ import { useState } from "react";
 
 export default function ProfileForm() {
     const [ecs, setEcs] = useState([
-        { title: "", description: "", logo: "" }
+        { title: "", description: "", logo: "", thumbnainailFile: null },
     ]);
     const [profilePic, setProfilePic] = useState("");
     const [profilePicFile, setProfilePicFile] = useState(null);
 
     const addEC = () => {
-        setEcs([...ecs, { title: "", description: "", logo: "" }]);
+        setEcs([...ecs, { title: "", description: "", logo: "", thumbnainailFile: null }]);
     };
 
     const removeEC = (index) => {
@@ -37,18 +37,34 @@ export default function ProfileForm() {
         setProfilePicFile(null);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const formData = {
-            name: e.target.name.value,
-            gpa: e.target.gpa.value,
-            studentId: e.target.studentId.value,
-            profilePic: profilePicFile || profilePic,
-            ecs: ecs,
-        };
-        console.log("Submitting profile:", formData);
-        // TODO: Send to backend (Firebase, Supabase, etc.)
+        const form = e.target;
+        const formData = new FormData();
+
+        formData.append("name", form.name.value);
+        formData.append("gpa", form.gpa.value);
+        formData.append("studentId", form.studentId.value);
+        formData.append("profilePic", form.profilePic.value);
+
+        ecs.forEach((ec, index) => {
+            formData.append(`ec_title_${index}`, ec.title);
+            formData.append(`ec_description_${index}`, ec.description);
+            formData.append(`ec_logo_${index}`, ec.logo || "");
+            if (ec.thumbnailFile) {
+                formData.append(`ec_thumb_${index}`, ec.thumbnailFile);
+            }
+        });
+
+        if (profilePicFile) {
+            formData.append("profilePic", form.profilePic.files[0]);
+        }
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}:`, value);
+        }
+        console.log(ecs);
     };
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-white px-4">
@@ -67,6 +83,7 @@ export default function ProfileForm() {
                             <input
                                 type="file"
                                 accept="image/*"
+                                name="profilePic"
                                 onChange={handleProfilePicChange}
                                 className="border border-orange-300 rounded-lg px-3 py-2 cursor-pointer hover:border-2"
                             />
@@ -109,6 +126,7 @@ export default function ProfileForm() {
                             We only use this to verify your profile is legit. It won’t be shown publicly.
                         </p>
                     </div>
+
 
                     {/* Name Section */}
                     <div>
@@ -179,34 +197,34 @@ export default function ProfileForm() {
                                 </div>
                                 <div>
                                     <label className="block text-sm text-orange-600">
-                                        Short Description{" "}
-                                        <span className="text-gray-500">(max 100 chars)</span>
+                                        Short Description <span className="text-gray-500">(max 100 chars)</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={ec.description}
                                         maxLength={100}
-                                        onChange={(e) =>
-                                            updateEC(index, "description", e.target.value)
-                                        }
+                                        onChange={(e) => updateEC(index, "description", e.target.value)}
                                         className="w-full border border-orange-300 rounded px-2 py-1"
                                         placeholder="e.g. Build and program autonomous robots"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm text-orange-600">
-                                        Logo URL <span className="text-gray-500">(optional)</span>
+                                        Thumbnail (optional image upload)
                                     </label>
                                     <input
-                                        type="url"
-                                        value={ec.logo}
-                                        onChange={(e) => updateEC(index, "logo", e.target.value)}
-                                        className="w-full border border-orange-300 rounded px-2 py-1"
-                                        placeholder="https://example.com/logo.png"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            updateEC(index, "thumbnailFile", file);
+                                        }}
+                                        className="border border-orange-300 rounded px-2 py-1 mt-1"
                                     />
                                 </div>
                             </div>
                         ))}
+
 
                         <button
                             type="button"
