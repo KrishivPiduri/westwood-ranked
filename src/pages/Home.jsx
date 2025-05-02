@@ -1,57 +1,7 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const initialProfiles = [
-    {
-        name: "Jordan Lee",
-        gpa: 3.85,
-        elo: 1200,
-        ecs: [
-            {
-                title: "Robotics Club",
-                description: "Competed in regional competitions, leading the robot design team.",
-                logo: "",
-            },
-            {
-                title: "National Honor Society",
-                description: "Organized community service projects and tutoring sessions.",
-                logo: "",
-            },
-            {
-                title: "Track and Field",
-                description: "Varsity member, competed in long-distance events.",
-                logo: "",
-            },
-        ],
-        profilePic: "", // no pic
-    },
-    {
-        name: "Alex Kim",
-        gpa: 3.90,
-        elo: 1300,
-        ecs: [
-            {
-                title: "Debate Club",
-                description: "Vice President, lead debates at regional tournaments.",
-                logo: "",
-            },
-            {
-                title: "Student Council",
-                description: "Organized school events and advocated for student policies.",
-                logo: "",
-            },
-            {
-                title: "Volunteer at Local Shelter",
-                description: "Worked to provide meals and shelter to homeless individuals.",
-                logo: "",
-            },
-        ],
-        profilePic: "", // no pic
-    },
-];
-
-const PLACEHOLDER_IMG =
-    "https://t3.ftcdn.net/jpg/05/16/27/58/360_F_516275801_f3Fsp17x6HQK0xQgDQEELoTuERO4SsWV.jpg";
+const API_BASE = "https://d2sbujyu9h.execute-api.us-east-1.amazonaws.com"; // Replace with actual API Gateway URL
 
 export default function HomePage() {
     const [profiles, setProfiles] = useState([]);
@@ -60,23 +10,40 @@ export default function HomePage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchProfiles().then()
+        fetchProfiles();
     }, []);
-
-    const handleSelect = (index) => {
-        setSelected(index);
-    };
-
-    const getProfilePic = (url) => url || PLACEHOLDER_IMG;
 
     const fetchProfiles = async () => {
         setLoading(true);
-        // simulate network delay
-        await new Promise((r) => setTimeout(r, 2000));
-        // in a real app you'd fetch new data here—here, we'll just re-use the same two
-        setProfiles(initialProfiles);
+        try {
+            const res = await fetch(`${API_BASE}/profiles`);
+            const data = await res.json();
+            setProfiles(data);
+        } catch (e) {
+            console.error("Failed to fetch profiles:", e);
+            setProfiles([]);
+        }
         setSelected(null);
         setLoading(false);
+    };
+
+    const handleSelect = async (index) => {
+        setSelected(index);
+        const winner = profiles[index];
+        const loser = profiles[1 - index];
+
+        try {
+            await fetch(`${API_BASE}/vote`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    winner_id: winner.id,
+                    loser_id: loser.id,
+                }),
+            });
+        } catch (e) {
+            console.error("Failed to submit vote:", e);
+        }
     };
 
     return (
@@ -91,27 +58,22 @@ export default function HomePage() {
                 <div className="flex space-x-8">
                     {profiles.map((profile, idx) => (
                         <div
-                            key={idx}
+                            key={profile.id}
                             className="border border-orange-600 rounded-lg p-8 bg-white shadow-xl w-full md:w-96"
                         >
                             {selected === null ? (
                                 <div className="space-y-6">
                                     <div className="flex flex-col items-center">
-                                        {/* silhouette for before state */}
-                                        <div className="w-32 h-32 bg-gray-300 rounded-full mb-4"></div>
+                                        <div className="w-32 h-32 bg-gray-300 rounded-full mb-4" />
                                         <h3 className="text-xl font-semibold text-orange-600 text-center">
                                             Profile #{idx + 1}
                                         </h3>
-
                                         <h4 className="text-sm font-semibold text-orange-600">
                                             <span className="font-bold">GPA:</span> {profile.gpa}
                                         </h4>
                                         <ul className="text-sm text-orange-500 space-y-2">
                                             {profile.ecs.map((ec, i) => (
-                                                <li
-                                                    key={i}
-                                                    className="flex items-center space-x-2 text-left"
-                                                >
+                                                <li key={i} className="flex items-center space-x-2 text-left">
                                                     <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
                                                     <div>
                                                         <h4 className="font-semibold text-orange-600">
@@ -123,7 +85,6 @@ export default function HomePage() {
                                             ))}
                                         </ul>
                                     </div>
-
                                     <button
                                         onClick={() => handleSelect(idx)}
                                         className="w-full bg-orange-600 text-white font-semibold py-3 rounded-lg mt-4 hover:bg-orange-700 transition duration-200 cursor-pointer"
@@ -133,12 +94,11 @@ export default function HomePage() {
                                 </div>
                             ) : (
                                 <div className="text-center space-y-6">
-                                    {/* full detail after selection */}
                                     <h3 className="text-xl font-semibold text-orange-600">
-                                        {profile.name}
+                                        {profile.name || `Profile #${idx + 1}`}
                                     </h3>
                                     <img
-                                        src={getProfilePic(profile.profilePic)}
+                                        src={`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${profile.id}`}
                                         alt={profile.name}
                                         className="w-32 h-32 object-cover rounded-full mx-auto"
                                     />
@@ -176,19 +136,15 @@ export default function HomePage() {
                     ))}
                 </div>
             )}
-            {/* Next button */}
-            {/* Next button */}
+
             {selected !== null && !loading && (
                 <>
                     <button
                         onClick={fetchProfiles}
-                        disabled={loading}
                         className="mt-6 w-full bg-orange-600 text-white font-semibold py-3 rounded-lg hover:bg-orange-700 transition duration-200 disabled:opacity-50 cursor-pointer"
                     >
                         Next
                     </button>
-
-                    {/* Call to action to submit profile */}
                     <button
                         onClick={() => navigate("/form")}
                         className="mt-4 text-sm text-orange-600 hover:underline transition duration-150 cursor-pointer"
