@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = "https://d2sbujyu9h.execute-api.us-east-1.amazonaws.com"; // Replace with actual API Gateway URL
+const API_BASE = "https://d2sbujyu9h.execute-api.us-east-1.amazonaws.com";
 
 export default function HomePage() {
     const [profiles, setProfiles] = useState([]);
+    const [validatedEcs, setValidatedEcs] = useState({});
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -19,12 +20,37 @@ export default function HomePage() {
             const res = await fetch(`${API_BASE}/profiles`);
             const data = await res.json();
             setProfiles(data);
+            preloadECImages(data);
         } catch (e) {
             console.error("Failed to fetch profiles:", e);
             setProfiles([]);
         }
         setSelected(null);
         setLoading(false);
+    };
+
+    const preloadECImages = async (profiles) => {
+        const result = {};
+
+        for (const profile of profiles) {
+            result[profile.id] = [];
+
+            for (let i = 0; i < profile.ecs.length; i++) {
+                const url = `http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${profile.id}${i}`;
+                try {
+                    const res = await fetch(url, { method: "HEAD" });
+                    if (res.ok) {
+                        result[profile.id][i] = url;
+                    } else {
+                        result[profile.id][i] = null;
+                    }
+                } catch {
+                    result[profile.id][i] = null;
+                }
+            }
+        }
+
+        setValidatedEcs(result);
     };
 
     const handleSelect = async (index) => {
@@ -114,10 +140,9 @@ export default function HomePage() {
                                         </p>
                                         {profile.ecs.map((ec, i) => (
                                             <div key={i} className="flex items-center space-x-2">
-                                                {ec.logo && (
+                                                {validatedEcs[profile.id]?.[i] && (
                                                     <img
-                                                        src={ec.logo}
-                                                        alt={ec.title}
+                                                        src={validatedEcs[profile.id][i]}
                                                         className="w-8 h-8 object-cover rounded-full"
                                                     />
                                                 )}

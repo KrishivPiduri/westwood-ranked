@@ -4,7 +4,6 @@ export default function ProfileForm() {
     const [ecs, setEcs] = useState([
         { title: "", description: "", logo: "", thumbnainailFile: null },
     ]);
-    const [profilePic, setProfilePic] = useState("");
     const [profilePicFile, setProfilePicFile] = useState(null);
 
     const addEC = () => {
@@ -27,41 +26,23 @@ export default function ProfileForm() {
     const handleProfilePicChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setProfilePicFile(URL.createObjectURL(file));
-            setProfilePic("");
+            setProfilePicFile(file);
         }
-    };
-
-    const handleProfilePicUrlChange = (e) => {
-        setProfilePic(e.target.value);
-        setProfilePicFile(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const form = e.target;
-        const formData = new FormData();
 
         const studentId = form.studentId.value;
-        formData.append("name", form.name.value);
-        formData.append("gpa", form.gpa.value);
-        formData.append("studentId", studentId);
-        formData.append("ec_count", ecs.length);
+        const body = {
+            name: form.name.value,
+            gpa: form.gpa.value,
+            studentId: studentId,
+            ecs: ecs.map(({ title, description, logo }) => ({ title, description, logo }))
+        };
 
-        ecs.forEach((ec, index) => {
-            formData.append(`ec_title_${index}`, ec.title);
-            formData.append(`ec_description_${index}`, ec.description);
-            formData.append(`ec_logo_${index}`, ec.logo || "");
-        });
-        console.log(formData);
         try {
-            const body = {
-                name: form.name.value,
-                gpa: form.gpa.value,
-                studentId: form.studentId.value,
-                ecs: ecs.map(({ title, description, logo }) => ({ title, description, logo }))
-            };
-
             const response = await fetch("https://d2sbujyu9h.execute-api.us-east-1.amazonaws.com/create", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -69,7 +50,62 @@ export default function ProfileForm() {
             });
 
             const data = await response.json();
-            console.log("Created ID:", data.id);
+            if (!response.ok) {
+                throw new Error(data.error || "Server error");
+            }
+
+            const uploadUrls = data["uploadUrls"];
+
+            // Upload profile picture if provided
+            if (profilePicFile) {
+                const fileInput = form.querySelector('input[name="profilePic"]');
+                if (fileInput && fileInput.files.length > 0) {
+                    await fetch(uploadUrls.profilePic, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'image/jpeg' },
+                        body: profilePicFile
+                    });
+                }
+            }
+
+            // Upload EC thumbnails if provided
+            for (let i = 0; i < ecs.length; i++) {
+                const file = ecs[i].thumbnailFile;
+                if (file && uploadUrls[`ec_${i}_thumbnail`]) {
+                    await fetch(uploadUrls[`ec_${i}_thumbnail`], {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'image/jpeg' },
+                        body: file
+                    });
+                }
+            }
+
+            // Upload profile picture if provided
+            if (form.profilePic) {
+                const fileInput = form.querySelector('input[name="profilePic"]');
+                if (fileInput && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    await fetch(uploadUrls.profilePic, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'image/jpeg' },
+                        body: file
+                    });
+                }
+            }
+
+            // Upload EC thumbnails if provided
+            for (let i = 0; i < ecs.length; i++) {
+                const file = ecs[i].thumbnailFile;
+                if (file && uploadUrls[`ec_${i}_thumbnail`]) {
+                    await fetch(uploadUrls[`ec_${i}_thumbnail`], {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'image/jpeg' },
+                        body: file
+                    });
+                }
+            }
+
+            alert("Profile submitted successfully!");
         } catch (err) {
             console.error(err);
             alert("Error submitting profile: " + err.message);
@@ -98,20 +134,13 @@ export default function ProfileForm() {
                                 onChange={handleProfilePicChange}
                                 className="border border-orange-300 rounded-lg px-3 py-2 cursor-pointer hover:border-2"
                             />
-                            <input
-                                type="url"
-                                value={profilePic}
-                                onChange={handleProfilePicUrlChange}
-                                className="border border-orange-300 rounded-lg px-3 py-2"
-                                placeholder="Or paste image URL"
-                            />
                         </div>
 
-                        {(profilePicFile || profilePic) && (
+                        {(profilePicFile) && (
                             <div className="mt-2">
                                 <h4 className="text-sm text-orange-600">Profile Picture Preview:</h4>
                                 <img
-                                    src={profilePicFile || profilePic}
+                                    src={profilePicFile}
                                     alt="Profile Preview"
                                     className="mt-2 w-32 h-32 object-cover rounded-full"
                                 />
