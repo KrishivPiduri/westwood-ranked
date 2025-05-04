@@ -1,90 +1,71 @@
-// pages/Leaderboard.jsx
 import { useEffect, useState } from "react";
-import {useNavigate} from "react-router-dom";
 
-export default function Leaderboard() {
+export default function RankedProfilesPage() {
     const [profiles, setProfiles] = useState([]);
-    const navigate = useNavigate();
-    // Example data – replace this with real backend data (Firebase, Supabase, etc.)
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        const sampleData = [
-            {
-                id: 1,
-                name: "Jordan Lee",
-                gpa: 4.0,
-                profilePic: "https://i.pravatar.cc/150?img=1",
-                ecs: ["Debate Club", "Math Olympiad"],
-            },
-            {
-                id: 2,
-                name: "Aisha Khan",
-                gpa: 3.95,
-                profilePic: "https://i.pravatar.cc/150?img=2",
-                ecs: ["Robotics Team", "Student Council"],
-            },
-            {
-                id: 3,
-                name: "Carlos Ramirez",
-                gpa: 3.88,
-                profilePic: "",
-                ecs: ["Football", "Drama Club"],
-            },
-        ];
-        setProfiles(sampleData);
+        const fetchProfiles = async () => {
+            setLoading(true);
+            try {
+                const indexRes = await fetch("http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/index.json");
+                const indexData = await indexRes.json();
+
+                const fullProfiles = await Promise.all(
+                    indexData.map(async ({ id, votes }) => {
+                        try {
+                            const profileRes = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${id}.json`);
+                            const profileData = await profileRes.json();
+                            return { ...profileData, id, votes: votes ?? 0 };
+                        } catch (err) {
+                            console.error(`Failed to load profile for ${id}:`, err);
+                            return null;
+                        }
+                    })
+                );
+
+                const validProfiles = fullProfiles.filter(Boolean);
+                const sorted = validProfiles.sort((a, b) => (b.votes || 0) - (a.votes || 0));
+                setProfiles(sorted);
+            } catch (err) {
+                console.error("Failed to fetch ranked profiles:", err);
+                setProfiles([]);
+            }
+            setLoading(false);
+        };
+
+        fetchProfiles();
     }, []);
 
-    // Sort by GPA descending
-    const sortedProfiles = [...profiles].sort((a, b) => b.gpa - a.gpa);
+    if (loading) {
+        return <p className="text-center text-orange-600 mt-10">Loading ranked profiles...</p>;
+    }
 
     return (
-        <div className="min-h-screen bg-white pt-24 px-4">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold text-orange-600 mb-6 text-center">
-                    Leaderboard
-                </h1>
-                <div className="overflow-x-auto">
-                    <table className="w-full border border-orange-200 rounded-xl overflow-hidden shadow">
-                        <thead className="bg-orange-100">
-                        <tr>
-                            <th className="py-3 px-4 text-left text-orange-600">Rank</th>
-                            <th className="py-3 px-4 text-left text-orange-600">Name</th>
-                            <th className="py-3 px-4 text-left text-orange-600">GPA</th>
-                            <th className="py-3 px-4 text-left text-orange-600">Extracurriculars</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {sortedProfiles.map((profile, index) => (
-                            <tr
-                                key={index}
-                                onClick={() => navigate(`/profile/${profile.id}`)}
-                                className="border-t border-orange-100 hover:bg-orange-50 transition cursor-pointer "
-                            >
-                                <td className="py-3 px-4 font-semibold text-orange-500">
-                                    #{index + 1}
-                                </td>
-                                <td className="py-3 px-4 flex items-center gap-3">
-                                    {profile.profilePic ? (
-                                        <img
-                                            src={profile.profilePic}
-                                            alt={profile.name}
-                                            className="w-10 h-10 rounded-full object-cover border border-orange-200"
-                                        />
-                                    ) : (
-                                        <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-orange-700 font-bold">
-                                            {profile.name[0]}
-                                        </div>
-                                    )}
-                                    <span>{profile.name}</span>
-                                </td>
-                                <td className="py-3 px-4">{profile.gpa.toFixed(2)}</td>
-                                <td className="py-3 px-4">
-                                    {profile.ecs.join(", ")}
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+        <div className="max-w-3xl mx-auto p-6">
+            <h1 className="text-3xl font-bold text-orange-600 text-center mb-6">Top Cracked Profiles</h1>
+            <div className="space-y-6">
+                {profiles.map((profile, index) => (
+                    <div
+                        key={profile.id}
+                        className="p-4 border border-orange-300 rounded-lg shadow-sm bg-white"
+                    >
+                        <div className="flex items-center space-x-4">
+                            <img
+                                src={`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${profile.id}`}
+                                alt={profile.name}
+                                className="w-16 h-16 rounded-full object-cover"
+                            />
+                            <div>
+                                <h2 className="text-xl font-semibold text-orange-600">
+                                    #{index + 1} <a className="cursor-pointer hover:underline" href={`/profile/${profile.id}`}>{profile.name || "Unnamed"}</a>
+                                </h2>
+                                <p className="text-sm text-gray-600">GPA: {profile.gpa}</p>
+                                <p className="text-sm text-gray-800 font-semibold">Votes: {profile.votes}</p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
