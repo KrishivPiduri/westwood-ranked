@@ -46,7 +46,7 @@ export default function ProfileForm() {
             const uid = user.uid;
 
             try {
-                const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${uid}.json`);
+                const res = await fetch(`https://d8jiiwiufqoxl.cloudfront.net/profiles/${uid}.json`);
                 if (res.ok) {
                     navigate(`/profile/${uid}`);
                 }
@@ -57,7 +57,7 @@ export default function ProfileForm() {
         };
 
         checkExistingProfile();
-    });
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -151,7 +151,7 @@ export default function ProfileForm() {
                         <div className="flex space-x-4 items-center">
                             <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/jpeg"
                                 name="profilePic"
                                 onChange={handleProfilePicChange}
                                 className="border border-orange-300 rounded-lg px-3 py-2 cursor-pointer hover:border-2"
@@ -253,20 +253,6 @@ export default function ProfileForm() {
                                         onChange={(e) => updateEC(index, "description", e.target.value)}
                                         className="w-full border border-orange-300 rounded px-2 py-1"
                                         placeholder="e.g. Build and program autonomous robots"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm text-orange-600">
-                                        Thumbnail (optional image upload)
-                                    </label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            updateEC(index, "thumbnailFile", file);
-                                        }}
-                                        className="border border-orange-300 rounded px-2 py-1 mt-1"
                                     />
                                 </div>
                             </div>

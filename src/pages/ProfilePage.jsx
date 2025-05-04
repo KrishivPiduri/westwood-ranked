@@ -49,18 +49,18 @@ export default function ProfilePage() {
         const fetchProfile = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${userId}.json`);
+                const res = await fetch(`https://d8jiiwiufqoxl.cloudfront.net/profiles/${userId}.json`);
                 const data = await res.json();
                 setProfile(data);
 
-                const indexRes = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/index.json`);
+                const indexRes = await fetch(`https://d8jiiwiufqoxl.cloudfront.net/index.json`);
                 const indexData = await indexRes.json();
                 const userFromIndex = indexData.find((u) => u.id === userId);
                 setVotes(userFromIndex?.votes ?? 0);
 
                 const urls = await Promise.all(
                     data.ecs.map(async (_ec, i) => {
-                        const url = `http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${userId}${i}`;
+                        const url = `https://d8jiiwiufqoxl.cloudfront.net/assets/${userId}${i}`;
                         try {
                             const head = await fetch(url, { method: "HEAD" });
                             return head.ok ? url : null;
@@ -83,13 +83,13 @@ export default function ProfilePage() {
         const fetchProfile = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${userId}.json`);
+                const res = await fetch(`https://d8jiiwiufqoxl.cloudfront.net/profiles/${userId}.json`);
                 const data = await res.json();
                 setProfile(data);
 
                 const urls = await Promise.all(
                     data.ecs.map(async (_ec, i) => {
-                        const url = `http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${userId}${i}`;
+                        const url = `https://d8jiiwiufqoxl.cloudfront.net/assets/${userId}${i}`;
                         try {
                             const head = await fetch(url, { method: "HEAD" });
                             return head.ok ? url : null;
@@ -120,7 +120,7 @@ export default function ProfilePage() {
         <div className="max-w-2xl mx-auto p-6">
             <div className="text-center">
                 <img
-                    src={`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${userId}`}
+                    src={`https://d8jiiwiufqoxl.cloudfront.net/assets/${userId}`}
                     alt={profile.name}
                     className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
                 />

@@ -25,7 +25,7 @@ export default function HomePage() {
 
     const checkUserHasProfile = async () => {
         try {
-            const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${user.uid}.json`);
+            const res = await fetch(`http://westwood-profile-data.krishivpiduri.com/profiles/${user.uid}.json`);
             setHasProfile(res.ok);
         } catch {
             setHasProfile(false);
@@ -58,7 +58,7 @@ export default function HomePage() {
         for (const profile of profiles) {
             result[profile.id] = [];
             for (let i = 0; i < profile.ecs.length; i++) {
-                const url = `http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${profile.id}${i}`;
+                const url = `http://westwood-profile-data.krishivpiduri.com/assets/${profile.id}${i}`;
                 try {
                     const res = await fetch(url, { method: "HEAD" });
                     result[profile.id][i] = res.ok ? url : null;
@@ -97,7 +97,7 @@ export default function HomePage() {
 
             {loading ? (
                 <div className="text-lg font-semibold text-orange-600">Loading...</div>
-            ) : (
+            ) : profiles.length >= 2 ? (
                 <div className="flex space-x-8">
                     {profiles.map((profile, idx) => (
                         <div
@@ -141,7 +141,7 @@ export default function HomePage() {
                                         {profile.name || `Profile #${idx + 1}`}
                                     </h3>
                                     <img
-                                        src={`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${profile.id}`}
+                                        src={`http://westwood-profile-data.krishivpiduri.com/assets/${profile.id}`}
                                         alt={profile.name}
                                         className="w-32 h-32 object-cover rounded-full mx-auto"
                                     />
@@ -178,9 +178,20 @@ export default function HomePage() {
                         </div>
                     ))}
                 </div>
+            ) : (
+                !noMoreProfiles && (
+                    <>
+                        <h2 className="text-xl font-semibold text-orange-600">There aren't any profiles on this website. Be the first to create one!</h2>
+                        <button
+                            onClick={() => navigate("/form")}
+                            className="bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-orange-700 transition duration-200 cursor-pointer"
+                        >
+                            Add Your Profile
+                        </button>
+                    </>
+                )
             )}
 
-            {/* CTA Section */}
             {!loading && noMoreProfiles && hasProfile !== null && (
                 <div className="mt-10 text-center space-y-4">
                     {hasProfile ? (

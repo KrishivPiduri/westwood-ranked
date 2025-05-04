@@ -8,13 +8,13 @@ export default function RankedProfilesPage() {
         const fetchProfiles = async () => {
             setLoading(true);
             try {
-                const indexRes = await fetch("http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/index.json");
+                const indexRes = await fetch("http://westwood-profile-data.krishivpiduri.com/index.json");
                 const indexData = await indexRes.json();
 
                 const fullProfiles = await Promise.all(
                     indexData.map(async ({ id, votes }) => {
                         try {
-                            const profileRes = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${id}.json`);
+                            const profileRes = await fetch(`http://westwood-profile-data.krishivpiduri.com/profiles/${id}.json`);
                             const profileData = await profileRes.json();
                             return { ...profileData, id, votes: votes ?? 0 };
                         } catch (err) {
