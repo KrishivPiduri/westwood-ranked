@@ -79,6 +79,7 @@ export default function ProfileForm() {
             // Upload EC thumbnails if provided
             for (let i = 0; i < ecs.length; i++) {
                 const file = ecs[i].thumbnailFile;
+                console.log(file instanceof File); // should log true
                 if (file && uploadUrls[`ec_${i}_thumbnail`]) {
                     await fetch(uploadUrls[`ec_${i}_thumbnail`], {
                         method: 'PUT',
@@ -143,8 +144,8 @@ export default function ProfileForm() {
                             type="text"
                             name="studentId"
                             required
-                            pattern="s\d{5}"
-                            title="Must start with 's' followed by 5 digits (e.g. s12345)"
+                            pattern="s\d{6}"
+                            title="Must start with 's' followed by 6 digits (e.g. s123456)"
                             className="w-full border border-orange-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                             placeholder="e.g. s12345"
                         />

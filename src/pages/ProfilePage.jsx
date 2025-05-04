@@ -1,102 +1,116 @@
-import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-
-// Simulated async API call
-const fetchProfileData = async (userId) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                id: userId,
-                name: "Jordan Lee",
-                gpa: 3.92,
-                profilePic: "https://i.pravatar.cc/150?img=8",
-                ecs: [
-                    {
-                        title: "Robotics Club",
-                        description: "Build and program autonomous robots for competitions.",
-                        logo: "https://cdn-icons-png.flaticon.com/512/2933/2933813.png",
-                    },
-                    {
-                        title: "Student Council",
-                        description: "Organize school events and represent student interests.",
-                        logo: "https://cdn-icons-png.flaticon.com/512/1828/1828463.png",
-                    },
-                ],
-            });
-        }, 1000); // Simulate network delay
-    });
-};
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
     const { userId } = useParams();
     const [profile, setProfile] = useState(null);
+    const [thumbnailUrls, setThumbnailUrls] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [votes, setVotes] = useState(null);
 
     useEffect(() => {
-        const loadProfile = async () => {
+        const fetchProfile = async () => {
             setLoading(true);
-            const data = await fetchProfileData(userId);
-            setProfile(data);
+            try {
+                const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${userId}.json`);
+                const data = await res.json();
+                setProfile(data);
+
+                const indexRes = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/index.json`);
+                const indexData = await indexRes.json();
+                const userFromIndex = indexData.find((u) => u.id === userId);
+                setVotes(userFromIndex?.votes ?? 0);
+
+                const urls = await Promise.all(
+                    data.ecs.map(async (_ec, i) => {
+                        const url = `http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${userId}${i}`;
+                        try {
+                            const head = await fetch(url, { method: "HEAD" });
+                            return head.ok ? url : null;
+                        } catch {
+                            return null;
+                        }
+                    })
+                );
+                setThumbnailUrls(urls);
+            } catch (err) {
+                console.error("Failed to load profile:", err);
+            }
             setLoading(false);
         };
-        loadProfile();
+
+        fetchProfile();
+    }, [userId]);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${userId}.json`);
+                const data = await res.json();
+                setProfile(data);
+
+                const urls = await Promise.all(
+                    data.ecs.map(async (_ec, i) => {
+                        const url = `http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${userId}${i}`;
+                        try {
+                            const head = await fetch(url, { method: "HEAD" });
+                            return head.ok ? url : null;
+                        } catch {
+                            return null;
+                        }
+                    })
+                );
+                setThumbnailUrls(urls);
+            } catch (err) {
+                console.error("Failed to load profile:", err);
+            }
+            setLoading(false);
+        };
+
+        fetchProfile();
     }, [userId]);
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <p className="text-orange-600 font-medium text-lg">Loading profile...</p>
-            </div>
-        );
+        return <p className="text-center text-orange-600 mt-10">Loading profile...</p>;
     }
 
     if (!profile) {
-        return (
-            <div className="min-h-screen flex items-center justify-center text-center">
-                <p className="text-red-600">Profile not found.</p>
-            </div>
-        );
+        return <p className="text-center text-red-600 mt-10">Profile not found.</p>;
     }
 
     return (
-        <div className="min-h-screen bg-white px-4 py-10">
-            <div className="max-w-3xl mx-auto bg-white border border-orange-500 rounded-2xl shadow-lg p-6">
-                <div className="flex items-center space-x-6 mb-6">
-                    <img
-                        src={profile.profilePic}
-                        alt={profile.name}
-                        className="w-24 h-24 object-cover rounded-full border border-orange-300"
-                    />
-                    <div>
-                        <h2 className="text-2xl font-bold text-orange-700">{profile.name}</h2>
-                        <p className="text-md text-gray-600">GPA: {profile.gpa}</p>
-                    </div>
-                </div>
+        <div className="max-w-2xl mx-auto p-6">
+            <div className="text-center">
+                <img
+                    src={`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${userId}`}
+                    alt={profile.name}
+                    className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
+                />
+                <h1 className="text-2xl font-bold text-orange-600">{profile.name}</h1>
+                <p className="text-gray-700 mt-1">GPA: {profile.gpa}</p>
+                <p className="text-gray-700 mt-1">Votes: {votes}</p>
+            </div>
 
-                <div>
-                    <h3 className="text-xl font-semibold text-orange-600 mb-4">Extracurriculars</h3>
-                    <div className="space-y-4">
-                        {profile.ecs.map((ec, index) => (
-                            <div
-                                key={index}
-                                className="border border-orange-200 rounded-lg p-4 flex items-start space-x-4"
-                            >
-                                {ec.logo && (
-                                    <img
-                                        src={ec.logo}
-                                        alt={ec.title}
-                                        className="w-16 h-16 object-cover rounded border"
-                                    />
-                                )}
-                                <div>
-                                    <h4 className="text-md font-semibold text-orange-700">
-                                        {ec.title}
-                                    </h4>
-                                    <p className="text-sm text-gray-700">{ec.description}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+            <div className="mt-8">
+                <h2 className="text-xl font-semibold text-orange-600 mb-4">Extracurriculars</h2>
+                <div className="space-y-4">
+                    {profile.ecs.map((ec, index) => (
+                        <div
+                            key={index}
+                            className="border border-orange-200 rounded-lg p-4 shadow-sm"
+                        >
+                            <h3 className="font-semibold text-orange-500">{ec.title}</h3>
+                            <p className="text-gray-700">{ec.description}</p>
+                            {thumbnailUrls[index] && (
+                                <img
+                                    src={thumbnailUrls[index]}
+                                    alt={`EC ${index}`}
+                                    className="w-24 h-24 mt-2 rounded-md object-cover"
+                                />
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

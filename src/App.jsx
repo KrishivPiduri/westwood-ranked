@@ -22,7 +22,7 @@ function App() {
                         <Route path="/form" element={<RequireAuth><Form /></RequireAuth>} />
                         <Route path="/leaderboard" element={<Leaderboard />} />
                         <Route path="/profile/:userId" element={<ProfilePage />} />
-                        <Route path="/Login" element={<Login />} />
+                        <Route path="/login" element={<Login />} />
                     </Routes>
                 </Layout>
             </Router>
