@@ -1,7 +1,12 @@
-import { useState } from "react";
 import { getAuth } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useEffect } from "react";
+
 
 export default function ProfileForm() {
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
     const [ecs, setEcs] = useState([
         { title: "", description: "", logo: "", thumbnailFile: null },
     ]);
@@ -31,8 +36,32 @@ export default function ProfileForm() {
         }
     };
 
+    useEffect(() => {
+        const checkExistingProfile = async () => {
+            const auth = getAuth();
+            const user = auth.currentUser;
+
+            if (!user) return;
+
+            const uid = user.uid;
+
+            try {
+                const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${uid}.json`);
+                if (res.ok) {
+                    navigate(`/profile/${uid}`);
+                }
+            } catch {
+                // No profile exists yet — allow form to be shown
+                console.log("No existing profile found, user may proceed.");
+            }
+        };
+
+        checkExistingProfile();
+    });
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         const form = e.target;
 
         const auth = getAuth();
@@ -88,13 +117,23 @@ export default function ProfileForm() {
                     });
                 }
             }
-
+            setLoading(false);
             alert("Profile submitted successfully!");
         } catch (err) {
             console.error(err);
             alert("Error submitting profile: " + err.message);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-orange-600 text-lg font-semibold animate-pulse">
+                    Creating your profile...
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-white px-4">
