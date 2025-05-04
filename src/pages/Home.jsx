@@ -10,7 +10,7 @@ export default function HomePage() {
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(true);
     const [noMoreProfiles, setNoMoreProfiles] = useState(false);
-    const [hasProfile, setHasProfile] = useState(null);
+    const [hasProfile, setHasProfile] = useState(false);
 
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -160,6 +160,7 @@ export default function HomePage() {
                                                 {validatedEcs[profile.id]?.[i] && (
                                                     <img
                                                         src={validatedEcs[profile.id][i]}
+                                                        alt={ec.title}
                                                         className="w-8 h-8 object-cover rounded-full"
                                                     />
                                                 )}
