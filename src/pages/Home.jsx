@@ -132,7 +132,7 @@ export default function HomePage() {
                                         <span className="font-bold">GPA:</span> {profile.gpa}
                                     </p>
                                     <p className="text-sm text-orange-500">
-                                        <span className="font-bold">ELO:</span> {profile.elo}
+                                        <span className="font-bold">Votes:</span> {profile.votes}
                                     </p>
                                     <div className="space-y-2">
                                         <p className="text-sm text-orange-500 font-semibold">
