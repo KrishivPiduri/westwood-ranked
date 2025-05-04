@@ -135,8 +135,18 @@ export default function ProfilePage() {
                 >
                     Vote for {profile.name}
                 </button>
-            ) : (
-                <p className="mt-4 text-sm text-gray-500 italic">You can’t vote for yourself.</p>
+            ): (
+                <div className="mt-6 bg-orange-50 border border-orange-200 rounded-lg p-4 text-sm text-orange-700">
+                    <p className="font-medium mb-2">Want more votes?</p>
+                    <p className="mb-2">Copy and send this to your friends:</p>
+                    <div className="bg-white p-3 rounded border text-left font-mono text-sm text-black overflow-scroll">
+                        <p>
+                            Yo, I made this profile on Cracked 🤓<br/>
+                            Vote for me here: <br/>
+                            https://westwoodranked.krishivpiduri.com/profile/{userId}
+                        </p>
+                    </div>
+                </div>
             )}
 
             <div className="mt-8">

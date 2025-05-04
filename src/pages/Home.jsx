@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "/context/AuthContext";
 
 const API_BASE = "https://d2sbujyu9h.execute-api.us-east-1.amazonaws.com";
 
@@ -8,19 +9,42 @@ export default function HomePage() {
     const [validatedEcs, setValidatedEcs] = useState({});
     const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [noMoreProfiles, setNoMoreProfiles] = useState(false);
+    const [hasProfile, setHasProfile] = useState(null);
+
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     useEffect(() => {
         fetchProfiles();
-    }, []);
+    });
+
+    useEffect(() => {
+        if (user) checkUserHasProfile();
+    }, [user]);
+
+    const checkUserHasProfile = async () => {
+        try {
+            const res = await fetch(`http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/profiles/${user.uid}.json`);
+            setHasProfile(res.ok);
+        } catch {
+            setHasProfile(false);
+        }
+    };
 
     const fetchProfiles = async () => {
         setLoading(true);
         try {
             const res = await fetch(`${API_BASE}/profiles`);
             const data = await res.json();
-            setProfiles(data);
-            preloadECImages(data);
+
+            if (data.length < 2) {
+                setNoMoreProfiles(true);
+                setProfiles([]);
+            } else {
+                setProfiles(data);
+                preloadECImages(data);
+            }
         } catch (e) {
             console.error("Failed to fetch profiles:", e);
             setProfiles([]);
@@ -31,25 +55,18 @@ export default function HomePage() {
 
     const preloadECImages = async (profiles) => {
         const result = {};
-
         for (const profile of profiles) {
             result[profile.id] = [];
-
             for (let i = 0; i < profile.ecs.length; i++) {
                 const url = `http://westwood-profile-data.s3-website-us-east-1.amazonaws.com/assets/${profile.id}${i}`;
                 try {
                     const res = await fetch(url, { method: "HEAD" });
-                    if (res.ok) {
-                        result[profile.id][i] = url;
-                    } else {
-                        result[profile.id][i] = null;
-                    }
+                    result[profile.id][i] = res.ok ? url : null;
                 } catch {
                     result[profile.id][i] = null;
                 }
             }
         }
-
         setValidatedEcs(result);
     };
 
@@ -162,21 +179,47 @@ export default function HomePage() {
                 </div>
             )}
 
-            {selected !== null && !loading && (
-                <>
-                    <button
-                        onClick={fetchProfiles}
-                        className="mt-6 w-full bg-orange-600 text-white font-semibold py-3 rounded-lg hover:bg-orange-700 transition duration-200 disabled:opacity-50 cursor-pointer"
-                    >
-                        Next
-                    </button>
-                    <button
-                        onClick={() => navigate("/form")}
-                        className="mt-4 text-sm text-orange-600 hover:underline transition duration-150 cursor-pointer"
-                    >
-                        Think you’re the most cracked in the school? Prove it.
-                    </button>
-                </>
+            {/* CTA Section */}
+            {!loading && noMoreProfiles && hasProfile !== null && (
+                <div className="mt-10 text-center space-y-4">
+                    {hasProfile ? (
+                        <>
+                            <h2 className="text-xl font-semibold text-orange-600">You've seen all the profiles!</h2>
+                            <p className="text-orange-600">
+                                Know someone more cracked? Invite them to make a profile 👇
+                            </p>
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mt-4 text-sm text-orange-700">
+                                <p className="mb-2 font-medium">Copy and send this to your friend:</p>
+                                <div className="bg-white p-3 rounded border text-left font-mono text-sm">
+                                    <p>
+                                        Hey, I just saw some crazy profiles on this app called Westwood Ranked 😂<br />
+                                        You should make one too. Go here: <br />
+                                        https://westwoodranked.krishivpiduri.com/form
+                                    </p>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="text-xl font-semibold text-orange-600">You've seen all the profiles!</h2>
+                            <button
+                                onClick={() => navigate("/form")}
+                                className="bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-orange-700 transition duration-200 cursor-pointer"
+                            >
+                                Add Your Profile
+                            </button>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {!loading && selected !== null && !noMoreProfiles && (
+                <button
+                    onClick={fetchProfiles}
+                    className="mt-6 w-full bg-orange-600 text-white font-semibold py-3 rounded-lg hover:bg-orange-700 transition duration-200 disabled:opacity-50 cursor-pointer"
+                >
+                    Next
+                </button>
             )}
         </div>
     );
