@@ -17,7 +17,7 @@ export default function HomePage() {
 
     useEffect(() => {
         fetchProfiles();
-    });
+    }, []);
 
     useEffect(() => {
         if (user) checkUserHasProfile();
