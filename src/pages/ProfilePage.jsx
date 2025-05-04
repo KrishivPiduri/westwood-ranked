@@ -141,7 +141,7 @@ export default function ProfilePage() {
                     <p className="mb-2">Copy and send this to your friends:</p>
                     <div className="bg-white p-3 rounded border text-left font-mono text-sm text-black overflow-scroll">
                         <p>
-                            Yo, I made this profile on Cracked 🤓<br/>
+                            Yo, I made this profile on Westwood Ranked 🤓<br/>
                             Vote for me here: <br/>
                             https://westwoodranked.krishivpiduri.com/profile/{userId}
                         </p>
