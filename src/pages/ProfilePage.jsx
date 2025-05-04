@@ -1,5 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import {useAuth} from "../../context/AuthContext.jsx";
+
+const API_BASE = "https://d2sbujyu9h.execute-api.us-east-1.amazonaws.com";
 
 export default function ProfilePage() {
     const { userId } = useParams();
@@ -7,6 +10,40 @@ export default function ProfilePage() {
     const [thumbnailUrls, setThumbnailUrls] = useState([]);
     const [loading, setLoading] = useState(true);
     const [votes, setVotes] = useState(null);
+    const {user}=useAuth()
+
+    const handleVote = async () => {
+        const voteKey = `voted_${userId}`;
+        if (!user && localStorage.getItem(voteKey)) {
+            alert("You've already voted for this user.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/vote`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ winner_id: userId, voterUid: user?.uid ?? null }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Vote failed");
+            }
+
+            // Update vote count
+            setVotes((v) => (v !== null ? v + 1 : 1));
+
+            if (!user) {
+                localStorage.setItem(voteKey, "true");
+            }
+
+            alert("Vote submitted!");
+        } catch (err) {
+            console.error(err);
+            alert("Error voting: " + err.message);
+        }
+    };
+
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -91,6 +128,16 @@ export default function ProfilePage() {
                 <p className="text-gray-700 mt-1">GPA: {profile.gpa}</p>
                 <p className="text-gray-700 mt-1">Votes: {votes}</p>
             </div>
+            {user.uid !== userId ? (
+                <button
+                    onClick={handleVote}
+                    className="mt-4 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 transition cursor-pointer"
+                >
+                    Vote for {profile.name}
+                </button>
+            ) : (
+                <p className="mt-4 text-sm text-gray-500 italic">You can’t vote for yourself.</p>
+            )}
 
             <div className="mt-8">
                 <h2 className="text-xl font-semibold text-orange-600 mb-4">Extracurriculars</h2>
