@@ -1,13 +1,14 @@
 import { useState } from "react";
+import { getAuth } from "firebase/auth";
 
 export default function ProfileForm() {
     const [ecs, setEcs] = useState([
-        { title: "", description: "", logo: "", thumbnainailFile: null },
+        { title: "", description: "", logo: "", thumbnailFile: null },
     ]);
     const [profilePicFile, setProfilePicFile] = useState(null);
 
     const addEC = () => {
-        setEcs([...ecs, { title: "", description: "", logo: "", thumbnainailFile: null }]);
+        setEcs([...ecs, { title: "", description: "", logo: "", thumbnailFile: null }]);
     };
 
     const removeEC = (index) => {
@@ -34,11 +35,21 @@ export default function ProfileForm() {
         e.preventDefault();
         const form = e.target;
 
-        const studentId = form.studentId.value;
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (!user) {
+            alert("You must be logged in to submit your profile.");
+            return;
+        }
+
+        const uid = user.uid;
+
         const body = {
+            uid: uid,
             name: form.name.value,
             gpa: form.gpa.value,
-            studentId: studentId,
+            studentId: form.studentId.value,
             ecs: ecs.map(({ title, description, logo }) => ({ title, description, logo }))
         };
 
@@ -57,40 +68,12 @@ export default function ProfileForm() {
             const uploadUrls = data["uploadUrls"];
 
             // Upload profile picture if provided
-            if (profilePicFile) {
-                const fileInput = form.querySelector('input[name="profilePic"]');
-                if (fileInput && fileInput.files.length > 0) {
-                    await fetch(uploadUrls.profilePic, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'image/jpeg' },
-                        body: profilePicFile
-                    });
-                }
-            }
-
-            // Upload EC thumbnails if provided
-            for (let i = 0; i < ecs.length; i++) {
-                const file = ecs[i].thumbnailFile;
-                if (file && uploadUrls[`ec_${i}_thumbnail`]) {
-                    await fetch(uploadUrls[`ec_${i}_thumbnail`], {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'image/jpeg' },
-                        body: file
-                    });
-                }
-            }
-
-            // Upload profile picture if provided
-            if (form.profilePic) {
-                const fileInput = form.querySelector('input[name="profilePic"]');
-                if (fileInput && fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    await fetch(uploadUrls.profilePic, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'image/jpeg' },
-                        body: file
-                    });
-                }
+            if (profilePicFile && uploadUrls.profilePic) {
+                await fetch(uploadUrls.profilePic, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'image/jpeg' },
+                    body: profilePicFile
+                });
             }
 
             // Upload EC thumbnails if provided
@@ -112,12 +95,11 @@ export default function ProfileForm() {
         }
     };
 
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-white px-4">
             <div className="w-full max-w-2xl bg-white border border-orange-600 p-6 rounded-2xl shadow-lg">
                 <h2 className="text-2xl font-bold text-orange-600 mb-6 text-center">
-                    Submit Your Profile
+                    Create Your Profile
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -135,38 +117,7 @@ export default function ProfileForm() {
                                 className="border border-orange-300 rounded-lg px-3 py-2 cursor-pointer hover:border-2"
                             />
                         </div>
-
-                        {(profilePicFile) && (
-                            <div className="mt-2">
-                                <h4 className="text-sm text-orange-600">Profile Picture Preview:</h4>
-                                <img
-                                    src={profilePicFile}
-                                    alt="Profile Preview"
-                                    className="mt-2 w-32 h-32 object-cover rounded-full"
-                                />
-                            </div>
-                        )}
                     </div>
-
-                    {/* Student ID Section */}
-                    <div>
-                        <label className="block text-orange-600 font-medium mb-1">
-                            Student ID <span className="text-gray-500 text-sm">(Format: s12345)</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="studentId"
-                            pattern="s\d{5}"
-                            required
-                            title="Must start with 's' followed by 5 digits"
-                            className="w-full border border-orange-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            placeholder="e.g. s12345"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            We only use this to verify your profile is legit. It won’t be shown publicly.
-                        </p>
-                    </div>
-
 
                     {/* Name Section */}
                     <div>
@@ -180,6 +131,22 @@ export default function ProfileForm() {
                             maxLength={50}
                             className="w-full border border-orange-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                             placeholder="e.g. Jordan Lee"
+                        />
+                    </div>
+
+                    {/* Student ID Section */}
+                    <div>
+                        <label className="block text-orange-600 font-medium mb-1">
+                            Student ID (used for verification)
+                        </label>
+                        <input
+                            type="text"
+                            name="studentId"
+                            required
+                            pattern="s\d{5}"
+                            title="Must start with 's' followed by 5 digits (e.g. s12345)"
+                            className="w-full border border-orange-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="e.g. s12345"
                         />
                     </div>
 
@@ -265,7 +232,6 @@ export default function ProfileForm() {
                             </div>
                         ))}
 
-
                         <button
                             type="button"
                             onClick={addEC}
@@ -278,7 +244,7 @@ export default function ProfileForm() {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition duration-200"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg transition duration-200 cursor-pointer"
                     >
                         Submit
                     </button>

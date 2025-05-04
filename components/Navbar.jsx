@@ -22,7 +22,7 @@ export default function Navbar() {
                         Home
                     </Link>
                     <Link to="/form" className="text-orange-600 hover:underline">
-                        Submit Profile
+                        Your Profile
                     </Link>
                     <Link to="/leaderboard" className="text-orange-600 hover:underline">
                         Leaderboard
